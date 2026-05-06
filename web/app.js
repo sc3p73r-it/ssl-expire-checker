@@ -2,6 +2,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 let supabase = null;
 let expiryThreshold = 15;
+const runtimeCfg = window.__SSL_CHECKER_CONFIG__ || {};
+const API_BASE = (runtimeCfg.API_BASE_URL || '').replace(/\/+$/, '');
 
 const $ = (id) => document.getElementById(id);
 
@@ -31,7 +33,8 @@ async function api(path, options = {}) {
   if (options.body != null) {
     headers['Content-Type'] = 'application/json';
   }
-  const res = await fetch(path, { ...options, headers });
+  const url = `${API_BASE}${path}`;
+  const res = await fetch(url, { ...options, headers });
   const text = await res.text();
   let body = null;
   try {
@@ -140,7 +143,7 @@ function showAuth() {
 }
 
 async function bootstrap() {
-  const cfg = await fetch('/api/config').then((r) => r.json());
+  const cfg = await resolvePublicConfig();
   expiryThreshold = cfg.expiryThreshold ?? 15;
   supabase = createClient(cfg.supabaseUrl, cfg.publishableKey, {
     auth: { persistSession: true, autoRefreshToken: true },
@@ -215,3 +218,19 @@ bootstrap().catch((e) => {
   console.error(e);
   alert(`Startup failed: ${e.message}`);
 });
+
+async function resolvePublicConfig() {
+  if (runtimeCfg.SUPABASE_URL && runtimeCfg.SUPABASE_PUBLISHABLE_KEY) {
+    return {
+      supabaseUrl: runtimeCfg.SUPABASE_URL,
+      publishableKey: runtimeCfg.SUPABASE_PUBLISHABLE_KEY,
+      expiryThreshold: 15,
+    };
+  }
+  const cfgUrl = `${API_BASE}/api/config`;
+  const res = await fetch(cfgUrl);
+  if (!res.ok) {
+    throw new Error('Unable to load public config. Set web/config.js for static hosting.');
+  }
+  return res.json();
+}

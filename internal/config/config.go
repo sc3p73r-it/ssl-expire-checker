@@ -15,6 +15,7 @@ type Config struct {
 	SupabaseProjectURL    string
 	SupabasePublishableKey string
 	SupabaseJWTSecret     string
+	FrontendOrigins       string
 	WebhookURL            string
 	ExpiryThresholdDays   int
 	ScanIntervalHours     int
@@ -31,6 +32,7 @@ func Load() (*Config, error) {
 		SupabaseProjectURL:     os.Getenv("SUPABASE_PROJECT_URL"),
 		SupabasePublishableKey: os.Getenv("SUPABASE_PUBLISHABLE_KEY"),
 		SupabaseJWTSecret:      os.Getenv("SUPABASE_JWT_SECRET"),
+		FrontendOrigins:        getStringEnv("FRONTEND_ORIGINS", "*"),
 		WebhookURL:             os.Getenv("WEBHOOK_URL"),
 		ExpiryThresholdDays:    getIntEnv("EXPIRY_THRESHOLD_DAYS", 15),
 		ScanIntervalHours:      getIntEnv("SCAN_INTERVAL_HOURS", 12),

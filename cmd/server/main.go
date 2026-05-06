@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	"ssl-expire-checker/internal/auth"
@@ -35,11 +37,20 @@ func main() {
 
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     splitOrigins(cfg.FrontendOrigins),
+		AllowMethods:     []string{"GET", "POST", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	r.GET("/", func(c *gin.Context) {
 		c.File("web/index.html")
 	})
 	r.Static("/static", "web")
+	r.StaticFile("/app.js", "web/app.js")
+	r.StaticFile("/config.js", "web/config.js")
 
 	r.GET("/api/health", handlers.Health)
 	r.GET("/api/config", handlers.PublicConfig(cfg))
@@ -81,4 +92,22 @@ func main() {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Printf("shutdown: %v", err)
 	}
+}
+
+func splitOrigins(v string) []string {
+	if strings.TrimSpace(v) == "" {
+		return []string{"*"}
+	}
+	parts := strings.Split(v, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	if len(out) == 0 {
+		return []string{"*"}
+	}
+	return out
 }

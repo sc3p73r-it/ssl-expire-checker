@@ -84,6 +84,44 @@ docker compose up --build
 
 The image runs as **nonroot** and expects `web/` next to the binary at `/app`.
 
+## Vercel frontend + external Go API
+
+This repository now supports split deployment:
+- **Frontend**: Vercel static hosting from `web/`
+- **Backend**: Go server on Render/Fly/Railway/VM
+
+### 1) Configure frontend runtime values
+
+Edit [`web/config.js`](web/config.js):
+
+```js
+window.__SSL_CHECKER_CONFIG__ = {
+  API_BASE_URL: "https://your-go-backend.example.com",
+  SUPABASE_URL: "https://<project-ref>.supabase.co",
+  SUPABASE_PUBLISHABLE_KEY: "sb_publishable_...",
+};
+```
+
+### 2) Configure backend CORS
+
+Set `FRONTEND_ORIGINS` in backend `.env`, for example:
+
+```bash
+FRONTEND_ORIGINS=https://your-app.vercel.app,http://localhost:8080
+```
+
+### 3) Deploy on Vercel
+
+- Import GitHub repo
+- Vercel uses [`vercel.json`](vercel.json) and serves `web/`
+- Deploy, then confirm frontend can call `${API_BASE_URL}/api/*`
+
+### 4) Supabase Auth URL settings
+
+In Supabase Dashboard -> Auth -> URL Configuration:
+- **Site URL**: `https://your-app.vercel.app`
+- **Additional Redirect URLs**: include your Vercel and local URLs
+
 ## HTTP API
 
 All `/api/*` routes except `GET /api/health` and `GET /api/config` require `Authorization: Bearer <supabase_access_token>`.
