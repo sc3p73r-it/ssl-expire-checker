@@ -52,7 +52,7 @@ func main() {
 
 	webFS := http.FS(webassets.Files)
 	r.GET("/", func(c *gin.Context) {
-		c.FileFromFS("index.html", webFS)
+		c.Data(http.StatusOK, "text/html; charset=utf-8", webassets.IndexHTML)
 	})
 	r.GET("/app.js", func(c *gin.Context) {
 		c.FileFromFS("app.js", webFS)
