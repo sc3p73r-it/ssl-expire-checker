@@ -87,21 +87,22 @@ func (h *Domains) Add(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid json or empty url"})
 		return
 	}
-	if _, err := ssl.NormalizeHost(body.URL); err != nil {
+	normalizedURL, err := ssl.NormalizeHost(body.URL)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx := c.Request.Context()
 	var id uuid.UUID
-	err := h.Pool.QueryRow(ctx, `
+	err = h.Pool.QueryRow(ctx, `
 		insert into public.domains (user_id, url, status)
 		values ($1, $2, 'pending')
 		on conflict (user_id, url) do nothing
 		returning id
-	`, uid, body.URL).Scan(&id)
+	`, uid, normalizedURL).Scan(&id)
 	if err == pgx.ErrNoRows {
-		err = h.Pool.QueryRow(ctx, `select id from public.domains where user_id = $1 and url = $2`, uid, body.URL).Scan(&id)
+		err = h.Pool.QueryRow(ctx, `select id from public.domains where user_id = $1 and url = $2`, uid, normalizedURL).Scan(&id)
 	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "db insert failed"})

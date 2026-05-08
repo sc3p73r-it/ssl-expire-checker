@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -27,10 +28,19 @@ type Config struct {
 func Load() (*Config, error) {
 	_ = godotenv.Load()
 
+	supabaseDBURL := firstNonEmptyEnv("SUPABASE_DB_URL", "DATABASE_URL")
+	supabaseProjectURL := firstNonEmptyEnv("SUPABASE_PROJECT_URL", "SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL")
+	supabasePublishableKey := firstNonEmptyEnv(
+		"SUPABASE_PUBLISHABLE_KEY",
+		"SUPABASE_ANON_KEY",
+		"NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+		"NEXT_PUBLIC_SUPABASE_ANON_KEY",
+	)
+
 	cfg := &Config{
-		SupabaseDBURL:          os.Getenv("SUPABASE_DB_URL"),
-		SupabaseProjectURL:     os.Getenv("SUPABASE_PROJECT_URL"),
-		SupabasePublishableKey: os.Getenv("SUPABASE_PUBLISHABLE_KEY"),
+		SupabaseDBURL:          supabaseDBURL,
+		SupabaseProjectURL:     supabaseProjectURL,
+		SupabasePublishableKey: supabasePublishableKey,
 		SupabaseJWTSecret:      os.Getenv("SUPABASE_JWT_SECRET"),
 		FrontendOrigins:        getStringEnv("FRONTEND_ORIGINS", "*"),
 		WebhookURL:             os.Getenv("WEBHOOK_URL"),
@@ -76,6 +86,15 @@ func getIntEnv(key string, def int) int {
 		return def
 	}
 	return n
+}
+
+func firstNonEmptyEnv(keys ...string) string {
+	for _, key := range keys {
+		if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // ScanInterval returns the configured scan interval as a duration.
