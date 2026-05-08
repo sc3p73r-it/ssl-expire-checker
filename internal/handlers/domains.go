@@ -39,8 +39,19 @@ type userScanJob struct {
 	URL string
 }
 
+func (h *Domains) ensurePool(c *gin.Context) bool {
+	if h.Pool != nil {
+		return true
+	}
+	c.JSON(http.StatusServiceUnavailable, gin.H{"error": "database is not configured"})
+	return false
+}
+
 // List returns domains for the authenticated user.
 func (h *Domains) List(c *gin.Context) {
+	if !h.ensurePool(c) {
+		return
+	}
 	uid, ok := auth.UserID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -77,6 +88,9 @@ type addBody struct {
 
 // Add inserts a new domain for the authenticated user.
 func (h *Domains) Add(c *gin.Context) {
+	if !h.ensurePool(c) {
+		return
+	}
 	uid, ok := auth.UserID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -113,6 +127,9 @@ func (h *Domains) Add(c *gin.Context) {
 
 // Delete removes a domain row owned by the user.
 func (h *Domains) Delete(c *gin.Context) {
+	if !h.ensurePool(c) {
+		return
+	}
 	uid, ok := auth.UserID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -138,6 +155,9 @@ func (h *Domains) Delete(c *gin.Context) {
 
 // ScanOne scans a single domain and persists the result.
 func (h *Domains) ScanOne(c *gin.Context) {
+	if !h.ensurePool(c) {
+		return
+	}
 	uid, ok := auth.UserID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -170,6 +190,9 @@ func (h *Domains) ScanOne(c *gin.Context) {
 
 // ScanAll scans all domains for the authenticated user concurrently.
 func (h *Domains) ScanAll(c *gin.Context) {
+	if !h.ensurePool(c) {
+		return
+	}
 	uid, ok := auth.UserID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})

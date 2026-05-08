@@ -29,6 +29,9 @@ func Load() (*Config, error) {
 	_ = godotenv.Load()
 
 	supabaseDBURL := firstNonEmptyEnv("SUPABASE_DB_URL", "DATABASE_URL")
+	if supabaseDBURL == "" {
+		supabaseDBURL = firstNonEmptyEnv("POSTGRES_URL", "POSTGRES_PRISMA_URL", "SUPABASE_DATABASE_URL")
+	}
 	supabaseProjectURL := firstNonEmptyEnv("SUPABASE_PROJECT_URL", "SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL")
 	supabasePublishableKey := firstNonEmptyEnv(
 		"SUPABASE_PUBLISHABLE_KEY",
@@ -36,12 +39,13 @@ func Load() (*Config, error) {
 		"NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
 		"NEXT_PUBLIC_SUPABASE_ANON_KEY",
 	)
+	supabaseJWTSecret := firstNonEmptyEnv("SUPABASE_JWT_SECRET", "JWT_SECRET")
 
 	cfg := &Config{
 		SupabaseDBURL:          supabaseDBURL,
 		SupabaseProjectURL:     supabaseProjectURL,
 		SupabasePublishableKey: supabasePublishableKey,
-		SupabaseJWTSecret:      os.Getenv("SUPABASE_JWT_SECRET"),
+		SupabaseJWTSecret:      supabaseJWTSecret,
 		FrontendOrigins:        getStringEnv("FRONTEND_ORIGINS", "*"),
 		WebhookURL:             os.Getenv("WEBHOOK_URL"),
 		ExpiryThresholdDays:    getIntEnv("EXPIRY_THRESHOLD_DAYS", 15),
@@ -55,12 +59,6 @@ func Load() (*Config, error) {
 	}
 	if cfg.SupabaseJWTSecret == "" {
 		return nil, fmt.Errorf("SUPABASE_JWT_SECRET is required")
-	}
-	if cfg.SupabaseProjectURL == "" {
-		return nil, fmt.Errorf("SUPABASE_PROJECT_URL is required")
-	}
-	if cfg.SupabasePublishableKey == "" {
-		return nil, fmt.Errorf("SUPABASE_PUBLISHABLE_KEY is required")
 	}
 	if cfg.WorkerCount < 1 {
 		cfg.WorkerCount = 1

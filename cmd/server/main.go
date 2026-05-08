@@ -27,11 +27,13 @@ func main() {
 	}
 
 	ctx := context.Background()
-	pool, err := db.NewPool(ctx, cfg.SupabaseDBURL)
-	if err != nil {
-		log.Fatalf("db: %v", err)
+	pool, dbErr := db.NewPool(ctx, cfg.SupabaseDBURL)
+	if dbErr != nil {
+		log.Printf("db disabled: %v", dbErr)
 	}
-	defer pool.Close()
+	if pool != nil {
+		defer pool.Close()
+	}
 
 	dh := &handlers.Domains{Pool: pool, Cfg: cfg}
 
@@ -67,7 +69,11 @@ func main() {
 
 	schedCtx, schedCancel := context.WithCancel(context.Background())
 	defer schedCancel()
-	go scheduler.Loop(schedCtx, pool, cfg)
+	if pool != nil {
+		go scheduler.Loop(schedCtx, pool, cfg)
+	} else {
+		log.Printf("scheduler disabled: database unavailable")
+	}
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
