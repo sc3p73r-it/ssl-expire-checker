@@ -18,6 +18,7 @@ import (
 	"ssl-expire-checker/internal/db"
 	"ssl-expire-checker/internal/handlers"
 	"ssl-expire-checker/internal/scheduler"
+	webassets "ssl-expire-checker/web"
 )
 
 func main() {
@@ -49,12 +50,16 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
+	webFS := http.FS(webassets.Files)
 	r.GET("/", func(c *gin.Context) {
-		c.File("web/index.html")
+		c.FileFromFS("index.html", webFS)
 	})
-	r.Static("/static", "web")
-	r.StaticFile("/app.js", "web/app.js")
-	r.StaticFile("/config.js", "web/config.js")
+	r.GET("/app.js", func(c *gin.Context) {
+		c.FileFromFS("app.js", webFS)
+	})
+	r.GET("/config.js", func(c *gin.Context) {
+		c.FileFromFS("config.js", webFS)
+	})
 
 	r.GET("/api/health", handlers.Health)
 	r.GET("/api/config", handlers.PublicConfig(cfg))
