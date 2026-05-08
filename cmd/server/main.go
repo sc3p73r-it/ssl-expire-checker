@@ -37,11 +37,13 @@ func main() {
 
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
+	origins := splitOrigins(cfg.FrontendOrigins)
+	allowCredentials := !containsWildcardOrigin(origins)
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     splitOrigins(cfg.FrontendOrigins),
+		AllowOrigins:     origins,
 		AllowMethods:     []string{"GET", "POST", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
-		AllowCredentials: true,
+		AllowCredentials: allowCredentials,
 		MaxAge:           12 * time.Hour,
 	}))
 
@@ -110,4 +112,13 @@ func splitOrigins(v string) []string {
 		return []string{"*"}
 	}
 	return out
+}
+
+func containsWildcardOrigin(origins []string) bool {
+	for _, origin := range origins {
+		if origin == "*" {
+			return true
+		}
+	}
+	return false
 }
